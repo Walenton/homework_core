@@ -1,45 +1,85 @@
-
-commands = {1: 'add book', 2: 'add phone', 3: 'edit phone', 4:'add handler', 5:'greeting handler',
-            6: 'search handler', 7: 'add birthday'}
-
-var_input = 'dd pho'
-
-if var_input in commands.values():
-    print (var_input)
-else:
-    list_commands = []   
-    for i in commands.values():
-        dict_commands = {}
-        for char in i:       
-            if char not in dict_commands:
-                dict_commands.update({char : 1})
-            else:
-                dict_commands[char] += 1
-        list_commands.append({i:dict_commands})
+import re
 
 
-    my_dict = {}
-    for i in var_input:
-        if i not in my_dict:
-            my_dict.update({i : 1})
-        else:
-            my_dict[i] += 1
+commands = [{i : re.sub('\W|\d', '', i)}  for i in 
+            ['help', 'hello', 'address', 'add', 'change', 'phone', 'search', 'birthday', 'email', 
+             'show all', 'show birthdays', 'delete', 'good bye', 'close', 'exit', 'stop']]
 
-print(list_commands)
-print(my_dict, '\n')
 
-final = {}
+user_input = 'dalit'
 
-for i_command in list_commands:
-    result = 0
-    #print (i_command)
-    for i_dict in my_dict:
-        for k, v in i_command.items():
-            if i_dict in v:
-                #print (i_command, i_dict, v, my_dict[i_dict]/v[i_dict])
-                result += v[i_dict]/my_dict[i_dict]
-                #print (k, i_dict, result)
-                final.update({k:result})
 
-print (max(final, key=final.get))
+def shrink_input(user_input):
+    pure_input = re.sub('[^a-zA-Z]', '', user_input)
+    return pure_input
 
+
+def match(pure_input):
+    list_of_possible_commands = []
+    var_input = shrink_input(pure_input)
+    for command in commands:
+        for k, v in command.items():
+            if var_input in v:
+                list_of_possible_commands.append(k)
+    #print (f'first match: {list_of_possible_commands}')                
+    return list_of_possible_commands
+    #return 'no match in commands'
+
+
+def regexed_input_one_d(pure_input, ind):
+    a = list(pure_input)
+    a[ind]='.?'
+    return ''.join(a)
+
+
+def one_dimensional(pure_input):
+    list_of_possible_commands = []
+    for command in commands:
+        for k_command, v_command in command.items():
+            for ind, _ in enumerate(pure_input):
+                re_symbol = regexed_input_one_d(pure_input, ind)
+                result = re.findall(re_symbol, v_command)
+                if result and k_command not in list_of_possible_commands:
+                    list_of_possible_commands.append(k_command)
+    return list_of_possible_commands
+                    # print (k_command, re_symbol, result, pure_input)
+
+
+def regexed_input_two_d(pure_input, fixed_ind, ind):
+    a = list(pure_input)
+    a[fixed_ind] = '.?'
+    a[ind]='.*'
+    return ''.join(a)
+
+
+def two_dimensional(pure_input, len_of_input):
+    list_of_possible_commands = []     
+    counter = 0
+    while counter<len_of_input:   
+        for command in commands:
+            for k_command, v_command in command.items():
+                for ind, _ in enumerate(pure_input):
+                    re_symbol = regexed_input_two_d(pure_input, counter, ind)
+                    #print(re_symbol)
+                    result = re.findall(re_symbol, v_command)
+                    if result and k_command not in list_of_possible_commands:
+                        list_of_possible_commands.append(k_command)
+                        #print (k_command, re_symbol, result, pure_input)                  
+        counter+=1
+    return list_of_possible_commands
+
+
+def main():
+    pure_input = shrink_input(user_input)
+    result = match(pure_input)
+    if not result:
+        result = one_dimensional(pure_input)
+    if not result:
+        len_of_input = len(pure_input)
+        if len_of_input>=5:
+            result = two_dimensional(pure_input, len_of_input)  
+    return result if result else 'Command not found. Try again.'
+
+
+if __name__ == '__main__':
+    print(main())
